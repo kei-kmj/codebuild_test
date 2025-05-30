@@ -1,0 +1,8 @@
+# このファイルはプルリクエストのレビュー担当者を自動的に割り当てます
+# https://help.github.com/articles/about-codeowners/
+
+# すべてのファイルに対するデフォルトのオーナー
+* @team-name
+
+# テストファイル用のオーナー
+/tests/ @team-name
