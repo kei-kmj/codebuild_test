@@ -24,11 +24,6 @@ jobs:
         aws-region: ap-northeast-1
 
     - name: Run CodeBuild
-      run: |
-        BUILD_ID=$(aws codebuild start-build \
-          --project-name react-github-actions-project \
-          --query 'build.id' \
-          --output text)
-        echo "Build started: $BUILD_ID"
-        aws codebuild wait build-complete --ids $BUILD_ID
-        echo "✅ Build completed!"
+      uses: aws-actions/aws-codebuild-run-build@v1.0.18
+      with:
+        project-name: react-github-actions-project
