@@ -1,0 +1,37 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Installing Node.js 23...
+      - curl -fsSL https://deb.nodesource.com/setup_23.x | sudo -E bash -
+      - sudo apt-get install -y nodejs
+      - echo Installing dependencies...
+      - npm install
+      - echo Installing Playwright browsers...
+      - npx playwright install --with-deps
+  pre_build:
+    commands:
+      - echo Nothing to do in the pre_build phase...
+  build:
+    commands:
+      - echo Build phase started on `date`
+      - echo Building React application...
+      - npm run build
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Deploying to S3...
+      - aws s3 sync dist/ s3://kamijo-971416076373-ap-northeast-1/ --delete
+      - echo Uploading to S3...
+      - aws s3 sync dist/ s3://kamijo-971416076373-ap-northeast-1/ --delete
+artifacts:
+  files:
+    - '**/*'
+  base-directory: dist
+  name: react-app-build
+
+cache:
+  paths:
+    - node_modules/**/*
