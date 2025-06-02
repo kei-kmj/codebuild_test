@@ -1,0 +1,39 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing Node.js dependencies..."
+      - npm ci
+      - echo "Installing Playwright browsers..."
+      - npx playwright install --with-deps chromium
+
+  pre_build:
+    commands:
+      - echo "Environment check..."
+      - node --version
+      - npm --version
+      - npx playwright --version
+      - echo "Checking EC2 app availability..."
+      - curl -f http://10.0.1.162:3000 || echo "EC2 app not ready"
+
+  build:
+    commands:
+      - echo "Running E2E tests against VPC internal EC2..."
+      - npx playwright test --config=playwright.config.ci.js
+
+  post_build:
+    commands:
+      - echo "E2E tests completed on $(date)"
+
+artifacts:
+  files:
+    - 'test-results/**/*'
+    - 'playwright-report/**/*'
+  base-directory: '.'
+
+reports:
+  playwright_tests:
+    files:
+      - 'test-results/junit.xml'
+    file-format: 'JUNITXML'
