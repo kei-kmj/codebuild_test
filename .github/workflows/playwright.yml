@@ -1,38 +1,72 @@
-name: Playwright Tests
+name: E2E Tests on CodeBuild
+
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
-  test:
+  e2e-tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        node-version: 20
+        role-to-assume: arn:aws:iam::971416076373:role/GitHubActionsOIDC-CodeBuildTest
+        aws-region: ap-northeast-1
 
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-
-    - name: Lint
-      run: npm run lint
-
-    - name: Build
-      run: npm run build
-
-    - name: Run Playwright tests
-      run: npm run test
-
-    - name: Upload Playwright report
-      uses: actions/upload-artifact@v4
-      if: always()
+    - name: Run E2E tests on CodeBuild (VPC内)
+      uses: aws-actions/aws-codebuild-run-build@v1.0.18
       with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+        project-name: kamijo-react-e2e-test
+        buildspec-override: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - echo "Installing dependencies..."
+                - npm ci
+                - echo "Installing Playwright browsers..."
+                - npx playwright install --with-deps chromium
+            pre_build:
+              commands:
+                - echo "Environment check..."
+                - node --version
+                - npm --version
+                - npx playwright --version
+                - echo "Checking EC2 app availability..."
+                - curl -f http://10.0.1.162:3000 || echo "EC2 app not ready, continuing anyway"
+            build:
+              commands:
+                - echo "Running linting..."
+                - npm run lint
+                - echo "Building application..."
+                - npm run build
+                - echo "Running E2E tests against VPC internal EC2..."
+                - npx playwright test --config=playwright.config.ci.js
+            post_build:
+              commands:
+                - echo "E2E tests completed"
+          artifacts:
+            files:
+              - 'test-results/**/*'
+              - 'playwright-report/**/*'
+            base-directory: '.'
+          reports:
+            playwright_tests:
+              files:
+                - 'test-results/junit.xml'
+              file-format: 'JUNITXML'
+
+    # CodeBuildからのartifactダウンロードは別途実装が必要
+    # 今回は簡略化してスキップ
