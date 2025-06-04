@@ -53,7 +53,7 @@ jobs:
                 - echo "Building application..."
                 - npm run build
                 - echo "Running E2E tests against VPC internal EC2..."
-                - npx playwright test --config=playwright.config.ci.js
+                - npx playwright test
             post_build:
               commands:
                 - echo "E2E tests completed"
